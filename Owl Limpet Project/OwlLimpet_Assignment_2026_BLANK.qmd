@@ -72,10 +72,8 @@ Make a table using `select()` and `distinct()` to only show the length of each t
 
 ```{r}
 TransectLengths <- SizeData_2022_2025 |> 
-  select(distinct())
+  distinct(SizeData_2022_2025[3])
   
-  
-
 TransectLengths
 ```
 
