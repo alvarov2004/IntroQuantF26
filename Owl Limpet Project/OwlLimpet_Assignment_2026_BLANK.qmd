@@ -9,6 +9,7 @@ editor: visual
 # Assessment of owl limpet (*Lottia gigantea*) populations at sites within Crystal Cove State Marine Conservation Area
 
 ```{r load packages, include = FALSE}
+# Loading relevant packages
 library(tidyverse)
 library(readxl)
 ```
@@ -28,8 +29,9 @@ You have been given data from several locations and survey years:
 - 2025: Treasure Cove (TC) - size data in 5-m transects, territories
 
 ```{r}
+# Loading our limpet data
 load(file = "Data/SizeData_2022_2025.Rdata")
-
+# View a tibble of the limpet data
 SizeData_2022_2025
 ```
 
@@ -42,6 +44,7 @@ Start with: `SizeData_2022_2025`
 Make a histogram with all the data.
 
 ```{r}
+# Creating a histogram of the data, specifically on shell length, in mm
 ggplot(SizeData_2022_2025) +
   aes(x = shell_length_mm) +
   geom_histogram()
@@ -51,17 +54,21 @@ ggplot(SizeData_2022_2025) +
 Make a histogram with a `facet_wrap()` to separate the data from each site and year into separate graphs. What do you observe about the different histograms?
 
 ```{r}
+# Making a series of histograms that shows data of each site and year
 ggplot(SizeData_2022_2025) +
   aes(x = shell_length_mm) +
   geom_histogram() +
-  facet_wrap(vars(site))
+  facet_wrap(vars(site, year))
+# The histograms demonstrate that each year only has data from one site, while 2024 has data of owl limpets from two sites
 ```
 
 We know our minimum size cut-off varied in different years of the surveys, and some teams just didn't follow directions. Filter out any observations smaller than 15 cm.
 
 ```{r}
+# To save the original data, we will save it as another save file, before we modify the Size_data tibble
 original_SizeData_2022_2025 <- SizeData_2022_2025
 
+# Filtering out the few entries that are below 15 mm in shell length, since owl limpets are only above 15mm in shell length
 SizeData_2022_2025 <- SizeData_2022_2025 |> 
   filter(shell_length_mm > 15)
 ```
@@ -71,8 +78,9 @@ SizeData_2022_2025 <- SizeData_2022_2025 |>
 Make a table using `select()` and `distinct()` to only show the length of each transect (each unique number) at each site. Sort by site and transect number.
 
 ```{r}
+# Since our table should only show the length of each transect at all the sites, we can use distinct() to create a new tibble with only the the length of each of the transects and what site that transect was made at
 TransectLengths <- SizeData_2022_2025 |> 
-  distinct(SizeData_2022_2025[3])
+  distinct(SizeData_2022_2025[1], SizeData_2022_2025[3]) 
   
 TransectLengths
 ```
