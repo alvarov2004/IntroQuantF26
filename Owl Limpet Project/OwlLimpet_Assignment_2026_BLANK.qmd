@@ -59,7 +59,7 @@ ggplot(SizeData_2022_2025) +
   aes(x = shell_length_mm) +
   geom_histogram() +
   facet_wrap(vars(site, year))
-# The histograms demonstrate that each year only has data from one site, while 2024 has data of owl limpets from two sites
+# The histograms demonstrate that each year only has data from one site, which are different sites besides in 2023 and 2024, and 2024 has data of owl limpets from two differentsites
 ```
 
 We know our minimum size cut-off varied in different years of the surveys, and some teams just didn't follow directions. Filter out any observations smaller than 15 cm.
@@ -79,10 +79,13 @@ Make a table using `select()` and `distinct()` to only show the length of each t
 
 ```{r}
 # Since our table should only show the length of each transect at all the sites, we can use distinct() to create a new tibble with only the the length of each of the transects and what site that transect was made at
+# [] with the number inside it is a way of calling that column in a tibble
 TransectLengths <- SizeData_2022_2025 |> 
-  distinct(SizeData_2022_2025[1], SizeData_2022_2025[3]) 
-  
+  distinct(select(SizeData_2022_2025, site, transect_length_m, transect_num))
+
+# Viewing our new table
 TransectLengths
+# When viewing, Corona del Mar's entry is seemingly NA
 ```
 
 Visualize the transect lengths two different ways.
@@ -94,15 +97,31 @@ Visualize the transect lengths two different ways.
 - combine the two so that the points are red and overlay the boxplot graph.
 
 ```{r}
+# Creating a boxplot with sit
 TransectLengths |> ggplot() +
-
-  
+  geom_boxplot() + 
+  aes(x = site, y = transect_length_m) +
+  theme_classic() +
+  xlab("Site") +
+  ylab("Length of transect (meters)")
 
 TransectLengths |> ggplot() +
-
+  geom_point() + 
+  aes(x = site, y = transect_length_m) +
+  theme_classic() +
+  xlab("Site") +
+  ylab("Length of transect (meters)")
 
 TransectLengths |> ggplot() +
-
+  geom_boxplot() + 
+  aes(x = site, y = transect_length_m) +
+  geom_point(aes(color = "red")) +
+  theme_classic() +
+  xlab("Site") +
+  ylab("Length of transect (meters)") +
+  theme(legend.title = element_blank()) +
+  scale_color_discrete(labels = c("Recorded 
+transect length"))
   
   
 ```
@@ -116,7 +135,22 @@ ANSWER: Our methods have been a little inconsistent. We used different methods a
 Graph 1:
 
 ```{r}
+ShellLength <- SizeData_2022_2025 |> 
+  drop_na(location)
+# Viewing our new table
+ShellLength
 
+ggplot(ShellLength) +
+  aes(x = shell_length_mm) +
+  geom_histogram() +
+  facet_wrap(vars(location))
+
+ShellLength |> ggplot() +
+  geom_boxplot() + 
+  aes(x = location, y = shell_length_mm) +
+  theme_classic() +
+  xlab("Location") +
+  ylab("Length of shell length (meters)")
 ```
 
 This shows:
