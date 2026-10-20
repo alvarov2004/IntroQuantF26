@@ -158,7 +158,22 @@ This shows:
 Graph 2:
 
 ```{r}
+HabitatShell <- SizeData_2022_2025 |> 
+  drop_na(habitat)
+# Viewing our new table
+HabitatShell
 
+ggplot(HabitatShell) +
+  aes(x = shell_length_mm) +
+  geom_histogram() +
+  facet_wrap(vars(habitat))
+
+HabitatShell |> ggplot() +
+  geom_boxplot() + 
+  aes(x = habitat, y = shell_length_mm) +
+  theme_classic() +
+  xlab("Habitat") +
+  ylab("Length of shell length (meters)")
 ```
 
 This shows:
@@ -169,6 +184,7 @@ For the population density analysis, we will analyze data from Shaws Cove, Heisl
 
 ```{r}
 No_CDM_Sizes <- SizeData_2022_2025 |> 
+  filter(site != "Corona del Mar")
 ```
 
 #### 2.1. How many limpets did we measure at each site in each year for sizes?
