@@ -7,12 +7,12 @@ editor: visual
 ---
 
 ```{r}
-install.packages()
+install.packages("pwr")
 
 library(pwr)
 library(tidyverse)
 
-load(file = )
+load(file = "Demo Data Files/CleanOwlLimpet_Data2023.Rdata")
 ```
 
 ## 1. The Setting: Owl Limpet T-test
