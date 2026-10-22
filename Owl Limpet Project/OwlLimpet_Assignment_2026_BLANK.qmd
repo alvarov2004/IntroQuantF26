@@ -135,17 +135,18 @@ ANSWER: Our methods have been a little inconsistent. We used different methods a
 Graph 1:
 
 ```{r}
-ShellLength <- SizeData_2022_2025 |> 
-  drop_na(location)
+Shell_Location <- SizeData_2022_2025 |> 
+  drop_na(location) # to ensure any N/A values aren't included
 # Viewing our new table
-ShellLength
+Shell_Location
 
-ggplot(ShellLength) +
+#Viewing the distribution of data between the two location types
+ggplot(Shell_Location) +
   aes(x = shell_length_mm) +
   geom_histogram() +
   facet_wrap(vars(location))
 
-ShellLength |> ggplot() +
+Shell_Location |> ggplot() +
   geom_boxplot() + 
   aes(x = location, y = shell_length_mm) +
   theme_classic() +
@@ -153,22 +154,43 @@ ShellLength |> ggplot() +
   ylab("Length of shell length (meters)")
 ```
 
-This shows:
+This shows: Owl limpets' shell length did not vary with an owl limpet's distance from the stairs/heaviest human-traffic locations, at the two sites where the location of a measured owl limpet from the stairs was recorded.
 
 Graph 2:
 
 ```{r}
+Shell_Habitat <- SizeData_2022_2025 |> 
+  drop_na(habitat) # to ensure any N/A values aren't included
+# Viewing our new table
+Shell_Habitat
 
+# Viewing distribution of data between the two habitat types
+ggplot(Shell_Habitat) +
+  aes(x = shell_length_mm) +
+  geom_histogram() +
+  facet_wrap(vars(habitat))
+
+Shell_Habitat |> ggplot() +
+  geom_boxplot() + 
+  aes(x = habitat, y = shell_length_mm) +
+  theme_classic() +
+  xlab("Habitat Type") +
+  ylab("Length of shell length (meters)")
 ```
 
-This shows:
+This shows: Owl limpets' shells are more likely to be shorter in length when they are living in patches, compared to an open habitat type.
 
 ## Part 2: Population Density
 
 For the population density analysis, we will analyze data from Shaws Cove, Heisler Park, and Treasure Cove. Create a data frame that excludes the Corona del Mar data, as that site did not have area measured.
 
 ```{r}
+# We use filter() to select every other site besides Corona del Mar
 No_CDM_Sizes <- SizeData_2022_2025 |> 
+  filter(site != "Corona del Mar")
+
+# Checking our data frame
+No_CDM_Sizes
 ```
 
 #### 2.1. How many limpets did we measure at each site in each year for sizes?
@@ -176,16 +198,24 @@ No_CDM_Sizes <- SizeData_2022_2025 |>
 Use nrow(), group_by() and count() to tally the limpet observations at each transect. We used the same transect numbers at Shaws and Heisler, so group_by() site as well.
 
 ```{r}
-No_CDM_Sizes
+#No_CDM_Sizes |> 
+#  count()
 
 # How many did we measure total, across both sites?
 No_CDM_Sizes |> 
+  nrow()
+
+# 1746 was returned, meaning there was a total of 1746 limpets measured, across all sites
 
 ## How many did we measure at each site? 
 No_CDM_Sizes |> 
+  count(nrow(site))
+
+No_CDM_Sizes
 
 # How many did we measure in each transect? 
 No_CDM_Sizes |> 
+  group_by(transect_num)
 ```
 
 #### 2.2 What was the limpet density (i.e., limpets per square meter) for each transect?
@@ -194,9 +224,10 @@ Make a new dataframe out of the `No_CDM_Sizes` that has a column called *density
 
 ```{r}
 Limpet_Density <- No_CDM_Sizes |> 
+  mutate(
+    
+  )
   
-  
-
 Limpet_Density
 ```
 
