@@ -97,7 +97,8 @@ Visualize the transect lengths two different ways.
 - combine the two so that the points are red and overlay the boxplot graph.
 
 ```{r}
-# Creating a boxplot with sit
+# Creating a boxplot with site as our x variable and y as the 
+# Boxplot will show the difference in distirbution and median of owl limpet shell length between the two site's
 TransectLengths |> ggplot() +
   geom_boxplot() + 
   aes(x = site, y = transect_length_m) +
@@ -105,6 +106,7 @@ TransectLengths |> ggplot() +
   xlab("Site") +
   ylab("Length of transect (meters)")
 
+# Points of each recorded owl limpet shell length, at each site
 TransectLengths |> ggplot() +
   geom_point() + 
   aes(x = site, y = transect_length_m) +
@@ -112,6 +114,7 @@ TransectLengths |> ggplot() +
   xlab("Site") +
   ylab("Length of transect (meters)")
 
+# Points are overlayed the boxplot, which are red
 TransectLengths |> ggplot() +
   geom_boxplot() + 
   aes(x = site, y = transect_length_m) +
@@ -196,12 +199,22 @@ No_CDM_Sizes
 
 # How many did we measure total, across both sites?
 No_CDM_Sizes |> 
+  group_by(site) |>
+  nrow()
+# Returns 1746, meaning 1746 owl limpets were measured across all sites
 
 ## How many did we measure at each site? 
 No_CDM_Sizes |> 
+  group_by(site) |>
+  count()
+  
+# At each site, we measured 
 
 # How many did we measure in each transect? 
 No_CDM_Sizes |> 
+  group_by(transect_num) |>
+  count()
+  
 ```
 
 #### 2.2 What was the limpet density (i.e., limpets per square meter) for each transect?
@@ -210,7 +223,9 @@ Make a new dataframe out of the `No_CDM_Sizes` that has a column called *density
 
 ```{r}
 Limpet_Density <- No_CDM_Sizes |> 
-  
+  group_by(transect_num)|>
+  #group_by(year) |>
+  mutate(density = nrow(transect_num) / (2*transect_length_m))
   
 
 Limpet_Density
@@ -224,6 +239,7 @@ What was the mean limpets per square meter across all sites? And the standard de
 
 ```{r}
 Limpet_Density |> 
+  
 
 
 ```
