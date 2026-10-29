@@ -37,6 +37,7 @@ SPAD_Data_Raw <-
   read_excel("Oak Data Entry MCRS Field Trip.xlsx", 
              sheet = "SPAD", 
              na = "NA")
+
 ```
 
 **Amy gives the gift of importing the LICOR objects for you:**
@@ -140,6 +141,14 @@ In this section we will look at and clean up each of the data sets you identifie
 You may be either examining `SPAD_Data_Raw`, `Height_Data_Raw`, `LICOR_Data_Raw`, or `Moist_Data_Raw` for your ANOVA question. Examine your data set using the diagnostic functions I've given you above in the How to Examine and Clean Data section.
 
 ```{r}
+glimpse(Moist_Data_Raw)
+
+glimpse(LICOR_Data_Raw)
+
+Moist_Data_Raw <- mutate(SYS_Date_YYMMDD = as.character(Moist_Data_Raw$Date))
+
+#LICOR_Moist_data <- full_join(LICOR_Data_Raw, Moist_Data_Raw)
+  
 
 ```
 
