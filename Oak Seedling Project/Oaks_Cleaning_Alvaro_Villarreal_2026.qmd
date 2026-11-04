@@ -250,10 +250,6 @@ Moist_Data_Merge
 
 Regression_Data <- full_join(LICOR_Transpiration, Moist_Data_Merge)
 
-
-#Regression_Data <- full_join(Moist_Data_Merge, LICOR_Transpiration)
-
-
 Regression_Data <- Regression_Data |>
   mutate(Tag_Number = as.numeric(Tag_Number))
 
@@ -284,14 +280,56 @@ Not sure where to start?
 Go for it!
 
 ```{r}
+#ANOVA-related graphs
 
+Moist_Data_Clean |> ggplot() + 
+  geom_histogram() +
+  aes(x = VWC_avg) +
+  xlab("Distribution of VWC") 
 
-#This figure means...
+# Viewing a distribution of VWC values, there isn't a clear distribution of values, with two peaks sort of showing themselves at the low and high ends. This means that, to perform statistical tests, transformations will definitely be required.
+
+Moist_Data_Clean |> ggplot() + 
+  geom_histogram() +
+  aes(x = VWC_avg) +
+  xlab("Distribution of VWC") +
+  facet_wrap(vars(Treatment))
+
+# When we view our distribution at each treatment, they are generally clumped and arranged similarly, possibly indicating the treatment not having an impact on the VWC values as I may have hypothesized. It should be noted that the Open Surface treatment has the highest concentration of larger VWC values, while the Canopy treatment has the highest proportion of VWC values at its lower end. This may be due to the Canopy stabilizing VWC in the soil more than the highly variable heating and cooling of open treatments.
+
+Moist_Data_Clean |> ggplot() + 
+  geom_boxplot() +
+  aes(x = Treatment, y = VWC_avg) +
+  geom_point(aes(color = "red")) +
+  ylab("Average Volumetric Water Content in Soil (%)") +
+  xlab("Treatment")
+
+#Compared with the previous graph, we can better observe a lack of VWC values near the median of our distributions, with VWCs more likely to found at the higher or lower end of their distributions, especially with the open treatment. It appears that the dead tree and canopy treatments stabilize and keep a smaller distribution of VWC than the exposed, open treatment.
+
+Moist_Data_Clean |> ggplot() + 
+  geom_boxplot() +
+  aes(x = Block, y = VWC_avg, fill = Treatment) +
+  ylab("Average Volumetric Water Content in Soil (%)") +
+  xlab("Block")
+
+# According to Amy, blocks 1-4 were collected in early October, before the rain. The following 4 blocks were collected after the rain, which creates the "jump" in VWC values observed in this graph from block 4, the end of the block 1-4 clump, to block 5, the beginning of the post-rain measurements. Overall, the graph easily demonstrates that rain increased the VWC values of an area, unsurprisingly. 
+
+# Regression plots
 
 ggplot(Regression_Data) +
   geom_point() +
-  aes(x = VWC_avg, y = Transpiration_avg) + 
-  #geom_text(aes(label = Tag_Number)) +
-  theme_classic()
+  aes(x = VWC_true_avg, y = Transpiration_avg) + 
+  theme_classic() +
+  geom_smooth(method = "lm")
 
+#This figure means that, if supported by statistical tests, that VWC in soil has a negative correlation with the rate of transpiration in oak saplings. This may be due to external factors, possibly that higher TWC means the surrounding air and conditions are cooler are result in slower rates of transpiration by oak saplings.
+
+ggplot(Regression_Data) +
+  geom_point() +
+  aes(x = VWC_true_avg, y = Transpiration_avg) + 
+  theme_classic() +
+  geom_smooth(method = "lm") +
+  facet_wrap(vars(Block))
+
+#Lastly, when viewing our data in each separate block, we Since each block is essentially different samples of the same area, it's not surprising to see each of these blocks exhibit the same downward, negative relationship between VWC in the soil with the rate of transpiration in each oak seedling. To note, it does demonstrate that the rainy days that took place after blocks 1-4 were recorded and blocks 5-8 were recorded did not affect the VWC and Transpiration relationship we graphed.
 ```
