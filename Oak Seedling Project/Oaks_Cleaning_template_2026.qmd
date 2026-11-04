@@ -203,8 +203,6 @@ Repeat the steps you took for your ANOVA data for your second data set of choice
 LICOR_Data_Raw
 ```
 
-head(LICOR_Data_Clean)
-
 ```{r}
 LICOR_Data_Clean <- LICOR_Data_Raw |>
  rename(Date = SYS_Date_YYYYMMDD)
@@ -230,10 +228,30 @@ LICOR_Transpiration <- LICOR_Data_Clean |>
   drop_na(Transpiration)
 
 LICOR_Transpiration <- LICOR_Transpiration |> 
+  drop_na(Treatment)
+
+LICOR_Transpiration <- LICOR_Transpiration |> 
   group_by(Tag_Number, Treatment, Block)|>
  summarize(Transpiration_avg = mean(Transpiration, na.rm = TRUE))
 
 LICOR_Transpiration
+
+Moist_Data_Merge <- Moist_Data_Clean |> 
+  group_by(Block, Treatment)|>
+  summarize(VWC_true_avg = mean(VWC_avg, na.rm = TRUE))
+
+Moist_Data_Merge
+
+Regression_Data <- full_join(LICOR_Transpiration, Moist_Data_Merge)
+
+
+#Regression_Data <- full_join(Moist_Data_Merge, LICOR_Transpiration)
+
+
+Regression_Data <- Regression_Data |>
+  mutate(Tag_Number = as.numeric(Tag_Number))
+
+Regression_Data
 
 ```
 
@@ -257,5 +275,11 @@ Go for it!
 
 
 #This figure means...
+
+ggplot(Regression_Data) +
+  geom_point() +
+  aes(x = VWC_avg, y = Transpiration_avg) + 
+  #geom_text(aes(label = Tag_Number)) +
+  theme_classic()
 
 ```
