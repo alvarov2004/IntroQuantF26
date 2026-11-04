@@ -141,14 +141,7 @@ In this section we will look at and clean up each of the data sets you identifie
 You may be either examining `SPAD_Data_Raw`, `Height_Data_Raw`, `LICOR_Data_Raw`, or `Moist_Data_Raw` for your ANOVA question. Examine your data set using the diagnostic functions I've given you above in the How to Examine and Clean Data section.
 
 ```{r}
-glimpse(Moist_Data_Raw)
-
-glimpse(LICOR_Data_Raw)
-
-Moist_Data_Raw <- mutate(SYS_Date_YYMMDD = as.character(Moist_Data_Raw$Date))
-
-#LICOR_Moist_data <- full_join(LICOR_Data_Raw, Moist_Data_Raw)
-  
+Moist_Data_Raw
 
 ```
 
@@ -161,13 +154,45 @@ Read about joins here: <https://r4ds.hadley.nz/joins>
 Check out the illustrative animations on this page: <https://github.com/gadenbuie/tidyexplain?tab=readme-ov-file#mutating-joins>
 
 ```{r}
-Height_Data <- Height_Data_Raw |> 
-  
-  # use notes like this to create a checklist of the things that need to be fixed, then you can fill in code between each line as you fix them. 
+head(Moist_Data_Raw)
 
-  # Thing to fix #2
+Moist_Data_Clean <- Moist_Data_Raw |> 
+  drop_na(Treatment)
 
-  # Thing to fix #3
+Moist_Data_Clean <- Moist_Data_Clean |> 
+  filter(Treatment != "NR")
+
+# Making the date the same as data sets used later
+Moist_Data_Clean$Date <- as.character(Moist_Data_Clean$Date)
+head(Moist_Data_Clean)
+
+Moist_Data_Clean <- Moist_Data_Clean |>
+  mutate(VWC1_perc = as.numeric(VWC1_perc))
+
+Moist_Data_Clean <- Moist_Data_Clean |>
+  mutate(VWC2_perc = as.numeric(VWC2_perc))
+
+Moist_Data_Clean <- Moist_Data_Clean |>
+  mutate(VWC3_perc = as.numeric(VWC3_perc))
+
+Moist_Data_Clean <- Moist_Data_Clean |> 
+  group_by(Block, Treatment, VWC1_perc, VWC2_perc, VWC3_perc)|>
+  mutate(VWC_avg = mean(c(VWC1_perc, VWC2_perc, VWC3_perc), na.rm = TRUE)) |>
+  ungroup()
+
+Moist_Data_Clean
+
+Moist_Data_Clean |> ggplot() + 
+  geom_boxplot() +
+  aes(x = Treatment, y = VWC_avg) +
+  ylab("Average Volumetric Water Content in Soil (%)") +
+  xlab("Treatment")
+
+Moist_Data_Clean |> ggplot() + 
+  geom_boxplot() +
+  aes(x = Block, y = VWC_avg, fill = Treatment) +
+  ylab("Average Volumetric Water Content in Soil (%)") +
+  xlab("Block")
 ```
 
 ### Regression dataset
@@ -175,13 +200,44 @@ Height_Data <- Height_Data_Raw |>
 Repeat the steps you took for your ANOVA data for your second data set of choice/
 
 ```{r}
-# View data set
+LICOR_Data_Raw
 ```
 
+head(LICOR_Data_Clean)
+
 ```{r}
-Data <- _Raw |> 
-   
-  #Things to Fix
+LICOR_Data_Clean <- LICOR_Data_Raw |>
+ rename(Date = SYS_Date_YYYYMMDD)
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Block = 'USERDEF_Block Number_NA')
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Treatment = Treatment_NA_NA)
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+ rename(Tag_Number = 'USERDEF_Tag Number_NA')
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Transpiration = `PORO_E_apparent_mmol+1m-2s-1`)
+
+head(LICOR_Data_Clean)
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  mutate(Transpiration = as.numeric(Transpiration))
+
+LICOR_Transpiration <- LICOR_Data_Clean |> 
+  drop_na(Transpiration)
+
+LICOR_Transpiration <- LICOR_Transpiration |> 
+  group_by(Tag_Number, Treatment, Block)|>
+ summarize(Transpiration_avg = mean(Transpiration, na.rm = TRUE))
+
+LICOR_Transpiration
+
+LICOR_Transpiration <- LICOR_Transpiration |>
+  mutate()
+
 ```
 
 ## Exploratory Data Analysis
@@ -201,5 +257,8 @@ Not sure where to start?
 Go for it!
 
 ```{r}
+
+
+#This figure means...
 
 ```
