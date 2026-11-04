@@ -235,9 +235,6 @@ LICOR_Transpiration <- LICOR_Transpiration |>
 
 LICOR_Transpiration
 
-LICOR_Transpiration <- LICOR_Transpiration |>
-  mutate()
-
 ```
 
 ## Exploratory Data Analysis
