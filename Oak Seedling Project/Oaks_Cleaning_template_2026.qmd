@@ -230,6 +230,12 @@ LICOR_Transpiration <- LICOR_Data_Clean |>
 LICOR_Transpiration <- LICOR_Transpiration |> 
   drop_na(Treatment)
 
+LICOR_Transpiration <- LICOR_Transpiration |>
+  filter(Treatment != 'NR')
+
+LICOR_Transpiration <- LICOR_Transpiration |>
+  filter(Treatment != '??')
+
 LICOR_Transpiration <- LICOR_Transpiration |> 
   group_by(Tag_Number, Treatment, Block)|>
  summarize(Transpiration_avg = mean(Transpiration, na.rm = TRUE))
@@ -252,6 +258,12 @@ Regression_Data <- Regression_Data |>
   mutate(Tag_Number = as.numeric(Tag_Number))
 
 Regression_Data
+
+Regression_Data <- Regression_Data |> 
+ drop_na(VWC_true_avg)
+
+Regression_Data <- Regression_Data |> 
+ drop_na(Tag_Number)
 
 ```
 
