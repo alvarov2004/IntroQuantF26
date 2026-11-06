@@ -14,34 +14,36 @@ In our owl limpet model, we know that territory size scales with body mass, but 
 
 ```{r}
 install.packages("cAIC4")
-install.packages("")
-install.packages("")
-install.packages("")
+install.packages("kableExtra")
+install.packages("lmerTest")
+install.packages("sjPlot")
 
 library(tidyverse)
-library()
-library()
-library()
+library(lme4)
+library(lmerTest)
+library(car)
 
-load(file = )
+load(file = "Demo Data Files/CleanOwlLimpet_Data2023.Rdata")
 ```
 
 ### Regression Review: Basic Linear Model
 
 ```{r}
-All_Terr_Data <- bind_rows() |> 
-  mutate(location = 
-    location == , 
-    location == , 
-    TRUE 
+All_Terr_Data <- bind_rows(TC_Terr2023, CDM_Terr2022, FenbergTerr) |> 
+  mutate(location = case_when(
+    location == "Protected" ~ "far", 
+    location == "Exploited" ~ "near", 
+    TRUE ~ as.character(location)))
 ```
 
 We have previously established that owl limpet territory sizes have a linear relationship between log(body mass) and log(territory size) at Treasure Cove.
 
 ```{r}
- |>
+TC_Terr2023 |>
   ggplot() + 
-
+  aes(x = log(mass_g), y = log(area_mm2)) + 
+  geom_point() + 
+  geom_smooth(method = "lm", se = FALSE)
 ```
 
 aes(x = log(mass_g), y = log(area_mm2)) +
@@ -51,8 +53,8 @@ geom_point()
 We can calculate the best fit line, the proportion of the variation explained, and our confidence in this model (our p-value, by proxy).
 
 ```{r}
-TCModel_linear <- lm(, data = )
-summary()
+TCModel_linear <- lm(log(area_mm2) ~ log(mass_g), data = TC_Terr2023)
+summary(TCModel_linear)
 ```
 
 ### ANCOVA: Accounting for a covariate in a linear model
@@ -66,15 +68,17 @@ One approach would be to examine each variable in our model for differences:
 #### ANOVA 1: Did body mass vary by location (i.e., are limpets bigger or smaller at either site?)?
 
 ```{r}
-TCModel_massANOVA <- 
-summary()
+TCModel_massANOVA <- lm(log(mass_g) ~ location, data = TC_Terr2023)
+
+summary(TCModel_massANOVA)
 ```
 
 #### ANOVA 2: Did territory area vary by location (near/far) within the site, for the limpets measured for the territories?
 
 ```{r}
-TCModel_areaANOVA <- 
+TCModel_areaANOVA <- lm(log(area_mm2) ~ location, data = TC_Terr2023)
 
+summary(TCModel_areaANOVA)
 ```
 
 Hmm, it looks like it did, but this doesn't tell us much. A better approach is to incorporate location into our model and examine both at the same time.
@@ -82,9 +86,9 @@ Hmm, it looks like it did, but this doesn't tell us much. A better approach is t
 #### ANCOVA: Does the linear relationship between mass and territory area differ by location within the site?
 
 ```{r}
-TCModel_ANCOVA_withInt <- lm()
+TCModel_ANCOVA_withInt <- lm(log(area_mm2) ~ log(mass_g) * location, data = TC_Terr2023)
 
-summary()
+summary(TCModel_ANCOVA_withInt)
 ```
 
 These results mean:
@@ -98,20 +102,19 @@ These results mean:
 Looking at the plot, this makes sense!
 
 ```{r}
- |>
+TC_Terr2023 |>
   ggplot() + 
-  aes(), color = ) + 
+  aes(x = log(mass_g), y = log(area_mm2), color = location) + 
   geom_point() + 
-  geom_smooth() 
-
+  geom_smooth(method = "lm", se = FALSE) 
 ```
 
 Since there was not a significant interaction, we should remove that from the model.
 
 ```{r}
-TCModel_noInt <- lm()
+TCModel_noInt <- lm(log(area_mm2) ~ log(mass_g) + location, data = TC_Terr2023)
 
-summary()
+summary(TCModel_noInt)
 ```
 
 The difference between locations is significant now! What's up with that?
@@ -125,7 +128,7 @@ Different ways of formulating the model or computing the outputs alters the way 
 
 ```{r}
         # how to get results of Type I SS
-        anova()
+anova(TCModel_noInt)
 ```
 
 - **Type II** Sum of Squares adjusts variable for main effects, but not for interactions.
@@ -133,7 +136,7 @@ Different ways of formulating the model or computing the outputs alters the way 
 
 ```{r}
         # how to get results of Type II SS
-        Anova(, type = )
+car::Anova(TCModel_noInt, type = "II")
 ```
 
 - **Type III** Sum of Squares gives you the result of when each variable is adjusted for the effect of all other variables; the main effects will be adjusted if there is an interaction specified.
@@ -141,16 +144,16 @@ Different ways of formulating the model or computing the outputs alters the way 
 
 ```{r}
         # how to get results of Type III SS
-        car::
+car::Anova(TCModel_ANCOVA_withInt, type = "III")
         
         # Gives same p-values as summary(lm())
-        summary()
+summary(TCModel_ANCOVA_withInt)
 ```
 
 Since the interaction in this model was not significant, and we do not have equal sampling between our two locations, we should report the results of the Type II Sum of Squares.
 
 ```{r}
-car::
+car::Anova(TCModel_noInt, type = "II")
 ```
 
 ## Comparing models using AIC
@@ -160,7 +163,12 @@ The Akaike Information Criterion (AIC) is a valuable tool for comparing models f
 Which of the model formulations that we tried above is the best fit model?
 
 ```{r}
-AIC() |> 
+AIC(TCModel_linear,
+    TCModel_massANOVA,
+    TCModel_areaANOVA,
+    TCModel_ANCOVA_withInt,
+    TCModel_noInt)
+#|> kableExtra::kable()
 ```
 
 Our best model has the lowest AIC score.
@@ -174,8 +182,8 @@ summary()
 Even though this model is a lot better than just a raw linear model without covariates, we're still missing a lot of variation and structure in our data that we ought to account for in our model. There is significant structure in our data! We have three sites and two locations within each site.
 
 ```{r}
-AllSiteModel_linear <- lm( , data = )
-summary()
+AllSiteModel_linear <- lm(log(area_mm2) ~ log(mass_g), data = All_Terr_Data)
+summary(AllSiteModel_linear)
 ```
 
 If we incorporate site with interactions (TC, CDM, Fenberg), we get this model:

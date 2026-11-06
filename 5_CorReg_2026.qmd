@@ -536,6 +536,8 @@ Since length is our RESPONSE variable, we look at the first column/row (they're 
 
 Which factor has the highest absolute value? Let's add that one first and run a simple model.
 
+summary(mod)
+
 ```{r}
 mod <- lm(Length ~ BOD, data = mf)
 summary(mod)
