@@ -10,30 +10,147 @@ lastmodified: November 9, 2026
 
 Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
 
-## Summary table
-
-First, we will load in our datasets:
-
-```{r}
-1 + 1
-```
-
 ## Loading packages
 
-Next, we will load the packages needed for this analysis.
+First, we will load the packages needed for this analysis.
 
 ```{r}
-#| echo: false
-2 * 2
+library(readxl)
+library(tidyverse)
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
+
+## Summary table
+
+Next, we will load in our datasets:
+
+```{r}
+# The following code was written by Amy King-Henry:
+Moist_Data_Raw <- 
+  read_excel("Oak Data Entry MCRS Field Trip.xlsx", 
+             sheet = "Soil Moisture")
+
+LICOR_Data_Raw_NAMES <- 
+  read_excel("Oak Data Entry MCRS Field Trip.xlsx",              
+             sheet = "LICOR", 
+             n_max = 3, 
+             col_names = FALSE, 
+             col_types = "text") |> 
+  summarise(across(.fns = paste, collapse = "_")) |> 
+  unlist() |> 
+  unname()
+
+LICOR_Data_Raw <- 
+  read_excel("Oak Data Entry MCRS Field Trip.xlsx",  
+             sheet = "LICOR", 
+             skip = 3, 
+             col_names = LICOR_Data_Raw_NAMES,
+             col_types = "text")
+
+
+ALL_Licor_NAMES <- 
+  read_excel("Oak Data Entry MCRS Field Trip.xlsx", 
+             sheet = "ALL_Licor_Ignore", 
+             n_max = 3, 
+             col_names = FALSE, 
+             col_types = "text") |> 
+  summarise(across(.fns = paste, collapse = "_")) |> 
+  unlist() |> 
+  unname()
+
+ALL_Licor <- 
+  read_excel("Oak Data Entry MCRS Field Trip.xlsx", 
+             sheet = "ALL_Licor_Ignore", 
+             skip = 3, 
+             col_names = ALL_Licor_NAMES, 
+             col_types = "text")
+
+LICOR_Data_Raw <- full_join(LICOR_Data_Raw, ALL_Licor)
+
+# Everything above this was code written by Amy King-Henry
+# From here, modifications to the LICOR and 
+
+Moist_Data_Raw
+
+head(Moist_Data_Raw)
+
+#Moist_Data_Clean <- Moist_Data_Raw |> 
+#drop_na(Treatment)
+
+# Natural recruits were found across all treatments, not relevant for the possible differences between microhabitats
+Moist_Data_Clean <- Moist_Data_Raw |> 
+  filter(Treatment != "NR")
+
+# Making the date the same as data sets used later
+Moist_Data_Clean$Date <- as.character(Moist_Data_Clean$Date)
+head(Moist_Data_Clean)
+
+Moist_Data_Clean <- Moist_Data_Clean |>
+  mutate(VWC1_perc = as.numeric(VWC1_perc))
+
+Moist_Data_Clean <- Moist_Data_Clean |>
+  mutate(VWC2_perc = as.numeric(VWC2_perc))
+
+Moist_Data_Clean <- Moist_Data_Clean |>
+  mutate(VWC3_perc = as.numeric(VWC3_perc))
+
+Moist_Data_Clean <- Moist_Data_Clean |> 
+  group_by(Block, Treatment, VWC1_perc, VWC2_perc, VWC3_perc)|>
+  mutate(VWC_avg = mean(c(VWC1_perc, VWC2_perc, VWC3_perc), na.rm = TRUE)) |>
+  ungroup()
+
+Moist_Data_Clean
+
+LICOR_Data_Raw
+
+LICOR_Data_Clean <- LICOR_Data_Raw |>
+  rename(Date = SYS_Date_YYYYMMDD)
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Block = 'USERDEF_Block Number_NA')
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Treatment = Treatment_NA_NA)
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Tag_Number = 'USERDEF_Tag Number_NA')
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  rename(Transpiration = `PORO_E_apparent_mmol+1m-2s-1`)
+
+head(LICOR_Data_Clean)
+
+LICOR_Data_Clean <- LICOR_Data_Clean |>
+  mutate(Transpiration = as.numeric(Transpiration))
+
+LICOR_Data_Clean
+
+LICOR_Transpiration <- LICOR_Data_Clean |> 
+  drop_na(Transpiration)
+
+LICOR_Transpiration <- LICOR_Transpiration |> 
+  drop_na(Treatment)
+
+LICOR_Transpiration <- LICOR_Transpiration |>
+  filter(Treatment != 'NR')
+
+LICOR_Transpiration <- LICOR_Transpiration |>
+  filter(Treatment != '??')
+
+LICOR_Transpiration <- LICOR_Transpiration |> 
+  group_by(Tag_Number, Treatment, Block)|>
+  summarize(Transpiration_avg = mean(Transpiration, na.rm = TRUE))
+
+LICOR_Transpiration
+```
 
 ## ANOVA
 
 You can add options to executable code like this
 
-```{r} #| echo: false 2 * 2}
+```{r}
+#| echo: false 2 * 2
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
@@ -42,7 +159,8 @@ The `echo: false` option disables the printing of code (only output is displayed
 
 You can add options to executable code like this
 
-```{r} #| echo: false 2 * 2}
+```{r}
+#| echo: false 2 * 2
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
