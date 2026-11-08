@@ -259,7 +259,7 @@ Regression_Data <- Regression_Data |>
  drop_na(VWC_true_avg)
 
 Regression_Data <- Regression_Data |> 
- drop_na(Tag_Number)
+ drop_na(Transpiration_avg)
 
 ```
 

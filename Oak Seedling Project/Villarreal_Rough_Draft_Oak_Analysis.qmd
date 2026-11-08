@@ -126,6 +126,27 @@ LICOR_Data_Clean <- LICOR_Data_Clean |>
 
 LICOR_Data_Clean
 
+LICOR_Data_Clean[60, 10] <- 'DT'
+LICOR_Data_Clean[61, 10] <- 'DT'
+LICOR_Data_Clean[62, 10] <- 'DT'
+LICOR_Data_Clean[64, 10] <- 'DT'
+LICOR_Data_Clean[65, 10] <- 'DT'
+LICOR_Data_Clean[66, 10] <- 'DT'
+
+LICOR_Data_Clean[58, 3] <- '276a'
+LICOR_Data_Clean[59, 3] <- '276a'
+LICOR_Data_Clean[60, 3] <- '276a'
+
+LICOR_Data_Clean[61, 3] <- '276b'
+LICOR_Data_Clean[62, 3] <- '276b'
+LICOR_Data_Clean[63, 3] <- '276b'
+
+LICOR_Data_Clean[64, 3] <- '276c'
+LICOR_Data_Clean[65, 3] <- '276c'
+LICOR_Data_Clean[66, 3] <- '276c'
+
+LICOR_Data_Clean
+
 LICOR_Transpiration <- LICOR_Data_Clean |> 
   drop_na(Transpiration)
 
@@ -143,6 +164,23 @@ LICOR_Transpiration <- LICOR_Transpiration |>
   summarize(Transpiration_avg = mean(Transpiration, na.rm = TRUE))
 
 LICOR_Transpiration
+
+# Preparing for ANOVA
+Moist_Data_Merge <- Moist_Data_Clean |> 
+  group_by(Block, Treatment)|>
+  summarize(VWC_true_avg = mean(VWC_avg, na.rm = TRUE))
+
+Moist_Data_Merge
+
+Regression_Data <- full_join(LICOR_Transpiration, Moist_Data_Merge)
+
+Regression_Data <- Regression_Data |> 
+  drop_na(VWC_true_avg)
+
+Regression_Data <- Regression_Data |> 
+  drop_na(Transpiration_avg)
+
+Regression_Data
 ```
 
 ## ANOVA
@@ -160,7 +198,14 @@ The `echo: false` option disables the printing of code (only output is displayed
 You can add options to executable code like this
 
 ```{r}
-#| echo: false 2 * 2
+#| echo: 
+
+ggplot(Regression_Data) +
+  geom_point() +
+  aes(x = VWC_true_avg, y = Transpiration_avg) + 
+  theme_classic() +
+  geom_smooth(method = "lm")
+
 ```
 
 The `echo: false` option disables the printing of code (only output is displayed).
