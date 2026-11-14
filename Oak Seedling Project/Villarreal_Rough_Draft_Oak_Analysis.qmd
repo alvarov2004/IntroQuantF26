@@ -3,12 +3,12 @@ title: "Villarreal_Rough_Draft_Oak_Analysis"
 format: html
 editor: visual
 author: Alvaro Villarreal
-lastmodified: November 9, 2026
+lastmodified: November 13, 2026
 ---
 
 ## Rough Draft Oaks Project Analysis
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+This will be analyzing SPAD index and soil VWC (Volumetric Water Content) measurements collected at Limestone Canyon, to understand the microhabitat conditions that may affect Coast Live Oak growth. Our ANOVA analysis will first examine where the three microhabitats change the water availability in soil. Next, the regressional analysis will examine a possible relationship between the soil's VWC with the general productivity of an oak sapling, with SPAD index used a proxy.
 
 ## Loading packages
 
@@ -17,33 +17,31 @@ First, we will load the packages needed for this analysis.
 ```{r}
 library(readxl)
 library(tidyverse)
-library(ggpubr)
+library(rstatix)
 ```
-
-The `echo: false` option disables the printing of code (only output is displayed).
 
 ## Summary table
 
-Next, we will load in our datasets:
+Next, we will load in our data sets:
 
 ```{r}
-# The following code was written by Amy King-Henry:
 Moist_Data_Raw <- 
   read_excel("Oak Data Entry MCRS Field Trip.xlsx", 
              sheet = "Soil Moisture")
+
+SPAD_Data_Raw <- 
+  read_excel("Oak Data Entry MCRS Field Trip.xlsx", 
+             sheet = "SPAD", 
+             na = "NA")
 
 Moist_Data_Raw
 
 head(Moist_Data_Raw)
 
-#Moist_Data_Clean <- Moist_Data_Raw |> 
-#drop_na(Treatment)
-
 # Natural recruits were found across all treatments, not relevant for the possible differences between microhabitats
 Moist_Data_Clean <- Moist_Data_Raw |> 
   filter(Treatment != "NR")
 
-# Making the date the same as data sets used later
 Moist_Data_Clean$Date <- as.character(Moist_Data_Clean$Date)
 head(Moist_Data_Clean)
 
@@ -56,6 +54,7 @@ Moist_Data_Clean <- Moist_Data_Clean |>
 Moist_Data_Clean <- Moist_Data_Clean |>
   mutate(VWC3_perc = as.numeric(VWC3_perc))
 
+# Since three VWC measurements were usually taken, we will use the average VWC for analysis
 Moist_Data_Clean <- Moist_Data_Clean |> 
   group_by(Block, Treatment, VWC1_perc, VWC2_perc, VWC3_perc)|>
   mutate(VWC_avg = mean(c(VWC1_perc, VWC2_perc, VWC3_perc), na.rm = TRUE)) |>
@@ -63,29 +62,48 @@ Moist_Data_Clean <- Moist_Data_Clean |>
 
 Moist_Data_Clean
 
-
-
-# Preparing for ANOVA
 Moist_Data_Merge <- Moist_Data_Clean |> 
   group_by(Block, Treatment)|>
   summarize(VWC_true_avg = mean(VWC_avg, na.rm = TRUE))
 
 Moist_Data_Merge
 
-#Regression_Data <- full_join(LICOR_Transpiration, Moist_Data_Merge)
+#Next, we clean our SPAD data
+SPAD_Data_Raw
 
-#Regression_Data <- Regression_Data |> 
- # drop_na(VWC_true_avg)
+SPAD_Data_Clean <- SPAD_Data_Raw |> 
+  drop_na(Tag_Num)
 
-#Regression_Data <- Regression_Data |> 
- # drop_na(Transpiration_avg)
+# Similar to the filtering of Natural Recruits, dead and Natural Recruit saplings will not be considered in this analysis
+SPAD_Merge <- SPAD_Data_Clean |>
+  filter(Dead_Alive != 'Dead')
 
-#Regression_Data
+SPAD_Merge <- SPAD_Merge  |>
+  filter(Treatment != 'NR')
+
+# Multiple leaf measurements were usually taken, so the average will be used
+SPAD_Merge <- SPAD_Merge |> 
+  group_by(Tag_Num, Treatment, Block)|>
+  summarize(Leaf_avg = mean(c(Leaf1, Leaf2, Leaf3, Leaf4, Leaf5, Leaf6), na.rm = TRUE))
+
+SPAD_Merge
+
+# Joining our datasets together
+Regression_Data <- full_join(SPAD_Merge, Moist_Data_Merge)
+
+#Whether it was due to saplings growing in treatments we don't have VWC data for or a lack of data of any saplings growing in a treatment, any missing holes will be removed
+Regression_Data <- Regression_Data |> 
+  drop_na(VWC_true_avg)
+
+Regression_Data <- Regression_Data |> 
+  drop_na(Tag_Num)
+
+Regression_Data
 ```
 
 ## ANOVA
 
-You can add options to executable code like this
+We will first run a one-way ANOVA between the average VWC of the soil at each of our recorded treatments.
 
 ```{r}
 # We start by looking at how our data looks
@@ -96,27 +114,52 @@ ggplot(Moist_Data_Merge) +
 
 model  <- lm(VWC_true_avg ~ Treatment + Block, data = Moist_Data_Merge)
 
+# Checking normality
 plot(model, which = 2)
+shapiro_test(residuals(model))
+# Normality is maintained
 
-# Create a QQ plot of residuals
-ggpubr::ggqqplot(residuals(model))
+# Checking equal variance
+hov <- aov(VWC_true_avg ~ Treatment + Block, data = Moist_Data_Merge)
+plot(hov, 1)   
+# A large dip in our plot requires transformation
+
+# Square root transformation creates a better Residuals vs Fitted and Q-Q Residuals plot
+sqrt_hov <- aov(sqrt(VWC_true_avg) ~ Treatment + Block, data = Moist_Data_Merge)
+plot(sqrt_hov, which = 1)
+plot(sqrt_hov, which = 2)
+
+# Checking normality of residuals for the new transformed data
+shapiro_test(residuals(sqrt_hov))
+
+#Checking homoegentity of variance
+car::leveneTest(log(VWC_true_avg + 1) ~ Treatment, data = Moist_Data_Merge)
+
+# Creating One-Way Anova
+model_vwc_lm <- lm(sqrt(VWC_true_avg) ~ Block + Treatment, Moist_Data_Merge)
+anova(model_vwc_lm)
+car::Anova(model_vwc_lm, type = "II")
+
+# Due to the results of this Type II table, the treatment has no detectable effect on the VWC of soil. Since Block seems to have a statistically significant impact on VWC, there is some variable not accounted for here that is more important to predicting VWC than Treatment.
+
 ```
-
-The `echo: false` option disables the printing of code (only output is displayed).
 
 ## Regression
 
-You can add options to executable code like this
+Next, we will be running a regression analysis between the average VWC of soil and the average SPAD index of each oak sapling from multiple leaf measurements.
 
 ```{r}
-#| echo: 
-
 ggplot(Regression_Data) +
   geom_point() +
-  aes(x = VWC_true_avg, y = Transpiration_avg) + 
+  aes(x = VWC_true_avg, y = Leaf_avg) + 
   theme_classic() +
   geom_smooth(method = "lm")
 
-```
+leaf.lm <- lm(Leaf_avg ~ VWC_true_avg, data = Regression_Data)
 
-The `echo: false` option disables the printing of code (only output is displayed).
+summary(leaf.lm)
+plot(leaf.lm)
+
+# Since all assumptions are generally met, there is a significant negative relationship between VWC and the SPAD index of an oak sapling's leaves. This means that, overall, there is likely stress and less productivity in an oak sapling growing in soil with higher VWC.
+
+```
