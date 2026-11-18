@@ -3,7 +3,7 @@ title: "Villarreal_Rough_Draft_Oak_Analysis"
 format: html
 editor: visual
 author: Alvaro Villarreal
-lastmodified: November 13, 2026
+lastmodified: November 17, 2026
 ---
 
 ## Rough Draft Oaks Project Analysis
@@ -110,6 +110,18 @@ Regression_Data
 
 We will first run a one-way ANOVA between the average VWC of the soil at each of our recorded treatments.
 
+ggplot(Moist_Data_ANOVA) +
+
+aes(x = Treatment, y = VWC_true_avg) +
+
+facet_wrap(vars(Date)) +
+
+geom_boxplot()
+
+model \<- lm(VWC_true_avg \~ Treatment \* Date + Block , data = Moist_Data_ANOVA)
+
+plot(model)
+
 ```{r}
 # We start by looking at how our data looks
 
@@ -120,7 +132,7 @@ ggplot(Moist_Data_ANOVA) +
   facet_wrap(vars(Date)) + 
   geom_boxplot()
 
-model <- lm(VWC_true_avg ~ Treatment + Block + Date, data = Moist_Data_ANOVA)
+model <- lm(VWC_true_avg ~ Treatment * Date + Block , data = Moist_Data_ANOVA)
 
 plot(model)
 
@@ -135,7 +147,7 @@ plot(hov, 1)
 # A large dip in our plot requires transformation
 
 # Square root transformation creates a better Residuals vs Fitted and Q-Q Residuals plot
-sqrt_hov <- aov(sqrt(VWC_true_avg) ~ Treatment + Block, data = Moist_Data_Merge)
+sqrt_hov <- aov(sqrt(VWC_true_avg) ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
 plot(sqrt_hov, which = 1)
 plot(sqrt_hov, which = 2)
 
