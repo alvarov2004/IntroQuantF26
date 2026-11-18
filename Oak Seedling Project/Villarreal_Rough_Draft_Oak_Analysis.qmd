@@ -62,22 +62,26 @@ Moist_Data_Clean <- Moist_Data_Clean |>
 
 Moist_Data_Clean
 
-Moist_Data_Merge <- Moist_Data_Clean |> 
-  group_by(Block, Treatment)|>
+head(Moist_Data_Clean)
+
+Moist_Data_ANOVA <- Moist_Data_Clean |> 
+  group_by(Date, Block, Treatment)|>
   summarize(VWC_true_avg = mean(VWC_avg, na.rm = TRUE))
 
-Moist_Data_Merge
+Moist_Data_Merge <- subset(Moist_Data_ANOVA, select = -Date)
 
 #Next, we clean our SPAD data
 SPAD_Data_Raw
 
-SPAD_Data_Clean <- SPAD_Data_Raw |> 
-  drop_na(Tag_Num)
+head(SPAD_Data_Raw)
+
+SPAD_Data_Clean <- SPAD_Data_Raw
 
 # Similar to the filtering of Natural Recruits, dead and Natural Recruit saplings will not be considered in this analysis
 SPAD_Merge <- SPAD_Data_Clean |>
   filter(Dead_Alive != 'Dead')
 
+# Currently don't have data available to assing a soil moisture to each Natural Recruit, since they were found in variable distance away from the other treatments
 SPAD_Merge <- SPAD_Merge  |>
   filter(Treatment != 'NR')
 
@@ -95,8 +99,9 @@ Regression_Data <- full_join(SPAD_Merge, Moist_Data_Merge)
 Regression_Data <- Regression_Data |> 
   drop_na(VWC_true_avg)
 
-Regression_Data <- Regression_Data |> 
-  drop_na(Tag_Num)
+# edit this later
+#Regression_Data <- Regression_Data |> 
+  #drop_na(Tag_Num)
 
 Regression_Data
 ```
@@ -108,11 +113,16 @@ We will first run a one-way ANOVA between the average VWC of the soil at each of
 ```{r}
 # We start by looking at how our data looks
 
-ggplot(Moist_Data_Merge) +
-  aes(x = Treatment, y = VWC_true_avg) + 
+#Separate the data by date
+
+ggplot(Moist_Data_ANOVA) +
+  aes(x = Treatment, y = VWC_true_avg) +
+  facet_wrap(vars(Date)) + 
   geom_boxplot()
 
-model  <- lm(VWC_true_avg ~ Treatment + Block, data = Moist_Data_Merge)
+model <- lm(VWC_true_avg ~ Treatment + Block + Date, data = Moist_Data_ANOVA)
+
+plot(model)
 
 # Checking normality
 plot(model, which = 2)
@@ -120,7 +130,7 @@ shapiro_test(residuals(model))
 # Normality is maintained
 
 # Checking equal variance
-hov <- aov(VWC_true_avg ~ Treatment + Block, data = Moist_Data_Merge)
+hov <- aov(VWC_true_avg ~ Treatment + Block + Date, data = Moist_Data_ANOVA)
 plot(hov, 1)   
 # A large dip in our plot requires transformation
 
@@ -136,7 +146,7 @@ shapiro_test(residuals(sqrt_hov))
 car::leveneTest(log(VWC_true_avg + 1) ~ Treatment, data = Moist_Data_Merge)
 
 # Creating One-Way Anova
-model_vwc_lm <- lm(sqrt(VWC_true_avg) ~ Block + Treatment, Moist_Data_Merge)
+model_vwc_lm <- lm(sqrt(VWC_true_avg) ~ Block + Treatment, Moist_Data_ANOVA)
 anova(model_vwc_lm)
 car::Anova(model_vwc_lm, type = "II")
 
@@ -149,6 +159,9 @@ car::Anova(model_vwc_lm, type = "II")
 Next, we will be running a regression analysis between the average VWC of soil and the average SPAD index of each oak sapling from multiple leaf measurements.
 
 ```{r}
+hist(Regression_Data$VWC_true_avg)
+hist(Regression_Data$Leaf_avg)
+
 ggplot(Regression_Data) +
   geom_point() +
   aes(x = VWC_true_avg, y = Leaf_avg) + 
