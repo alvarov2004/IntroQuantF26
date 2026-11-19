@@ -110,18 +110,6 @@ Regression_Data
 
 We will first run a one-way ANOVA between the average VWC of the soil at each of our recorded treatments.
 
-ggplot(Moist_Data_ANOVA) +
-
-aes(x = Treatment, y = VWC_true_avg) +
-
-facet_wrap(vars(Date)) +
-
-geom_boxplot()
-
-model \<- lm(VWC_true_avg \~ Treatment \* Date + Block , data = Moist_Data_ANOVA)
-
-plot(model)
-
 ```{r}
 # We start by looking at how our data looks
 
@@ -142,12 +130,12 @@ shapiro_test(residuals(model))
 # Normality is maintained
 
 # Checking equal variance
-hov <- aov(VWC_true_avg ~ Treatment + Block + Date, data = Moist_Data_ANOVA)
+hov <- aov(VWC_true_avg ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
 plot(hov, 1)   
 # A large dip in our plot requires transformation
 
 # Square root transformation creates a better Residuals vs Fitted and Q-Q Residuals plot
-sqrt_hov <- aov(sqrt(VWC_true_avg) ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
+sqrt_hov <- aov(log(VWC_true_avg) ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
 plot(sqrt_hov, which = 1)
 plot(sqrt_hov, which = 2)
 
@@ -155,10 +143,11 @@ plot(sqrt_hov, which = 2)
 shapiro_test(residuals(sqrt_hov))
 
 #Checking homoegentity of variance
-car::leveneTest(log(VWC_true_avg + 1) ~ Treatment, data = Moist_Data_Merge)
+car::leveneTest(log(VWC_true_avg) ~ Treatment * Date, data = Moist_Data_ANOVA)
 
 # Creating One-Way Anova
-model_vwc_lm <- lm(sqrt(VWC_true_avg) ~ Block + Treatment, Moist_Data_ANOVA)
+model_vwc_lm <- lm(log(VWC_true_avg) ~ Treatment * Date + Block, Moist_Data_ANOVA)
+plot(model_vwc_lm)
 anova(model_vwc_lm)
 car::Anova(model_vwc_lm, type = "II")
 
