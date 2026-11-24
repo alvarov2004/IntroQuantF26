@@ -3,12 +3,12 @@ title: "Villarreal_Rough_Draft_Oak_Analysis"
 format: html
 editor: visual
 author: Alvaro Villarreal
-lastmodified: November 17, 2026
+lastmodified: November 23, 2026
 ---
 
 ## Rough Draft Oaks Project Analysis
 
-This will be analyzing SPAD index and soil VWC (Volumetric Water Content) measurements collected at Limestone Canyon, to understand the microhabitat conditions that may affect Coast Live Oak growth. Our ANOVA analysis will first examine where the three microhabitats change the water availability in soil. Next, the regressional analysis will examine a possible relationship between the soil's VWC with the general productivity of an oak sapling, with SPAD index used a proxy.
+This will be analyzing SPAD index and soil VWC (Volumetric Water Content) measurements collected at Limestone Canyon, to understand the microhabitat conditions that may affect Coast Live Oak growth. Our ANOVA analysis will first examine where the three microhabitats change the water availability in soil. Next, the linear regression analysis will examine a possible relationship between the soil's VWC with the general productivity of an oak sapling, with SPAD index used a proxy.
 
 ## Loading packages
 
@@ -18,6 +18,7 @@ First, we will load the packages needed for this analysis.
 library(readxl)
 library(tidyverse)
 library(rstatix)
+library(ggtext)
 ```
 
 ## Summary table
@@ -64,6 +65,12 @@ Moist_Data_Clean
 
 head(Moist_Data_Clean)
 
+summarise(n = n(),
+          VWC_mean = mean(VWC_true_avg), VWC_sd = sd(VWC_true_avg),
+          VWC_min = min(VWC_true_avg), VWC_max = max(VWC_true_avg),
+          SPAD_mean = mean(Leaf_avg), SPAD_sd = sd(Leaf_avg),
+          SPAD_min = min(Leaf_avg), SPAD_max = max(Leaf_avg))
+
 Moist_Data_ANOVA <- Moist_Data_Clean |> 
   group_by(Date, Block, Treatment)|>
   summarize(VWC_true_avg = mean(VWC_avg, na.rm = TRUE))
@@ -77,13 +84,19 @@ head(SPAD_Data_Raw)
 
 SPAD_Data_Clean <- SPAD_Data_Raw
 
-# Similar to the filtering of Natural Recruits, dead and Natural Recruit saplings will not be considered in this analysis
+# Dead saplings will not be considered in this analysis
 SPAD_Merge <- SPAD_Data_Clean |>
   filter(Dead_Alive != 'Dead')
 
-# Currently don't have data available to assing a soil moisture to each Natural Recruit, since they were found in variable distance away from the other treatments
+
+# Currently don't have data available to assign a soil moisture to each Natural Recruit, since they were found in variable distance away from or outside the other treatments
 SPAD_Merge <- SPAD_Merge  |>
   filter(Treatment != 'NR')
+
+SPAD_Merge %>%
+  summarise(n = n(),
+            SPAD_mean = mean(Leaf_avg), SPAD_sd = sd(Leaf_avg, na.rm = TRUE),
+            SPAD_min = min(Leaf_avg), SPAD_max = max(Leaf_avg))
 
 # Multiple leaf measurements were usually taken, so the average will be used
 SPAD_Merge <- SPAD_Merge |> 
@@ -99,9 +112,8 @@ Regression_Data <- full_join(SPAD_Merge, Moist_Data_Merge)
 Regression_Data <- Regression_Data |> 
   drop_na(VWC_true_avg)
 
-# edit this later
-#Regression_Data <- Regression_Data |> 
-  #drop_na(Tag_Num)
+Regression_Data <- Regression_Data |> 
+  drop_na(Leaf_avg)
 
 Regression_Data
 ```
@@ -118,24 +130,27 @@ We will first run a one-way ANOVA between the average VWC of the soil at each of
 ggplot(Moist_Data_ANOVA) +
   aes(x = Treatment, y = VWC_true_avg) +
   facet_wrap(vars(Date)) + 
-  geom_boxplot()
+  geom_boxplot() +
+theme_classic() +
+  labs(x = "Microhabitat Treatment",
+       y = "Volumetric Water Content of Soil (%)")
+
+ggsave("vwc_microhabitat_dist.png", dpi = 300)
 
 model <- lm(VWC_true_avg ~ Treatment * Date + Block , data = Moist_Data_ANOVA)
 
 plot(model)
 
 # Checking normality
-plot(model, which = 2)
 shapiro_test(residuals(model))
 # Normality is maintained
 
-# Checking equal variance
-hov <- aov(VWC_true_avg ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
-plot(hov, 1)   
-# A large dip in our plot requires transformation
+# Checking homogenity of vaiance
+car::leveneTest(VWC_true_avg ~ Treatment * Date, data = Moist_Data_ANOVA)
+# Does not fuffil assumption for homogenity of variance
 
 # Square root transformation creates a better Residuals vs Fitted and Q-Q Residuals plot
-sqrt_hov <- aov(log(VWC_true_avg) ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
+sqrt_hov <- aov(sqrt(VWC_true_avg) ~ Treatment * Date + Block, data = Moist_Data_ANOVA)
 plot(sqrt_hov, which = 1)
 plot(sqrt_hov, which = 2)
 
@@ -143,12 +158,11 @@ plot(sqrt_hov, which = 2)
 shapiro_test(residuals(sqrt_hov))
 
 #Checking homoegentity of variance
-car::leveneTest(log(VWC_true_avg) ~ Treatment * Date, data = Moist_Data_ANOVA)
+car::leveneTest(sqrt(VWC_true_avg) ~ Treatment * Date, data = Moist_Data_ANOVA)
 
 # Creating One-Way Anova
-model_vwc_lm <- lm(log(VWC_true_avg) ~ Treatment * Date + Block, Moist_Data_ANOVA)
+model_vwc_lm <- lm(sqrt(VWC_true_avg) ~ Treatment * Date + Block, Moist_Data_ANOVA)
 plot(model_vwc_lm)
-anova(model_vwc_lm)
 car::Anova(model_vwc_lm, type = "II")
 
 # Due to the results of this Type II table, the treatment has no detectable effect on the VWC of soil. Since Block seems to have a statistically significant impact on VWC, there is some variable not accounted for here that is more important to predicting VWC than Treatment.
@@ -160,20 +174,36 @@ car::Anova(model_vwc_lm, type = "II")
 Next, we will be running a regression analysis between the average VWC of soil and the average SPAD index of each oak sapling from multiple leaf measurements.
 
 ```{r}
-hist(Regression_Data$VWC_true_avg)
 hist(Regression_Data$Leaf_avg)
-
-ggplot(Regression_Data) +
-  geom_point() +
-  aes(x = VWC_true_avg, y = Leaf_avg) + 
-  theme_classic() +
-  geom_smooth(method = "lm")
+hist(Regression_Data$VWC_true_avg)
 
 leaf.lm <- lm(Leaf_avg ~ VWC_true_avg, data = Regression_Data)
+
+Regression_Data %>%
+  ungroup() %>%
+  summarise(n = n(),
+            VWC_mean = mean(VWC_true_avg), VWC_sd = sd(VWC_true_avg),
+            VWC_min = min(VWC_true_avg), VWC_max = max(VWC_true_avg),
+            SPAD_mean = mean(Leaf_avg), SPAD_sd = sd(Leaf_avg),
+            SPAD_min = min(Leaf_avg), SPAD_max = max(Leaf_avg))
 
 summary(leaf.lm)
 plot(leaf.lm)
 
+regression_plot <- ggplot(Regression_Data) +
+  geom_point() +
+  aes(x = VWC_true_avg, y = Leaf_avg) + 
+  theme_classic() +
+  geom_smooth(method = "lm",  se = FALSE, linetype = "dashed") +
+  labs(x = "Volumetric Water Content of Soil (%)",
+       y = expression(italic("Quercus agrifolia")*" Leaf SPAD Index")) +
+  geom_text(x = 10, y = 48, label = "R-squared = 0.06, y = -0.23(x) + 34.66")
+regression_plot
+
+ggsave("regression_plot.png", dpi = 300)
+
 # Since all assumptions are generally met, there is a significant negative relationship between VWC and the SPAD index of an oak sapling's leaves. This means that, overall, there is likely stress and less productivity in an oak sapling growing in soil with higher VWC.
 
 ```
+
+"
